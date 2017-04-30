@@ -102,13 +102,15 @@ var map = Vue.component('vmap', {
     },
     methods: {
         updateMap: function(items) {
+            console.log("I got these items");
+            console.log(items);
             if (Array.isArray(items) && items.lenght > 0) {
                 if (this.markers) {
                     this.map.removeLayer(this.markers);
                 }
                 this.markers = L.markerClusterGroup();
                 items.forEach(function(item) {
-                    var location = [item.lat, item.long];
+                    var location = [item.location.lat, item.location.long];
                     var maker = L.marker(location);
                     marker.bindPopup("<p>Hello world</p>");
                 });
@@ -136,6 +138,7 @@ var map = Vue.component('vmap', {
             bus.$emit("zoomend", this.map.getZoom());
         }.bind(this));
         this.map.invalidateSize();
+        //bus.$on("dataLoaded", this.updateMap);
     }
 });
 
@@ -181,13 +184,30 @@ var driver = {
             }
         },
         fetchEvents: function(location) {
-            console.log(location);
+            var _this = this;
+            $.ajax({
+                method: "GET",
+       	        url: "http://volbot-engine.slackerswithbots.com/api/v1/events",
+       	        dataType: 'json',
+       	    }).then(function(data) {
+                console.log(data);
+       	        if (data.length > 0) {
+       	            _this.items = data;
+       	            bus.$emit("dataLoaded", data); // emit event when items are loaded
+       	        }
+       	        else {
+       	            _this.items = [];
+       	        }
+       	    }).fail(function(data) {
+       	        _this.items = []; // if request doesn't work load an empty array
+       	        console.log(data);
+       	    });
         },
         updateLocation: function(loc) {
-            console.log(loc);
+            this.currentLocation = loc;
         },
         updateZoom: function(zoom) {
-            console.log(zoom);
+            this.zoom = zoom;
         }
     }
 };

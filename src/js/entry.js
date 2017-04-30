@@ -4,6 +4,74 @@ if(!bus){
     var bus = new Vue();
 }
 
+var listItem = Vue.component('vlistitem', {
+    template: `
+        <div class="item-wrapper">
+            <md-card>
+                <md-card-header>
+                    <h4>Event Title</h4>
+                </md-card-header>
+                <md-card-content>
+                    Your event description, url, and any images here
+                </md-card-content>
+            </md-card>
+        </div>
+    `,
+    data: function() {
+        return {
+            parentObj: null,
+        }
+    },
+    props: {
+        item: Object,
+    },
+});
+
+var list = Vue.component('vlist', {
+    template:`
+        <div class="list-wrapper">
+            <md-card>
+                <md-card-header class="md-theme-blue">
+                    <h2>Search For Opportunities</h2>
+                </md-card-header>
+                <md-input-container>
+                    <md-icon>search</md-icon>
+                    <md-input type="text" placeholder="Just type..."></md-input>
+                </md-input-container>
+                <md-card-content>
+                    <md-list v-if="items.length > 0">
+                        <vlistitem v-for="item in items" :item="item"></vlistitem>
+                    </md-list>
+                    <p v-else>Looks there's nothing going on near you :/</p>
+                </md-card-content>
+            </md-card>
+        </div>
+    `,
+    data: function() {
+        return {
+            parentObj: null,
+        }
+    },
+    props: {
+        items: Array,
+    },
+    watch: {
+        items: function(newItems) {
+            this.updateItems(newItems);
+        }
+    },
+    mounted: function() {
+        if (this.$parent._isMounted) {
+            //do something
+        }
+    },
+    methods: {
+        updateItems: function(items) {
+            console.log(items);
+        }
+    }
+});
+
 var map = Vue.component('vmap', {
     template:`
         <div class="map-wrapper">
@@ -49,7 +117,7 @@ var map = Vue.component('vmap', {
         },
         calcDistance: function(lat, lng) {
             return (0.000621371192 * L.latLng(this.center[0], this.center[1]).distanceTo(L.latLng(lat, lng))).toFixed(1);
-        } 
+        }
     },
     mounted: function() {
         this.map = L.map("v-map", {
@@ -67,7 +135,7 @@ var map = Vue.component('vmap', {
         this.map.on("zoomend", function() {
             bus.$emit("zoomend", this.map.getZoom());
         }.bind(this));
-        this.map.invalidateSize();        
+        this.map.invalidateSize();
     }
 });
 
@@ -79,7 +147,8 @@ var driver = {
             center: [],
             zoom: 13,
             url: "http://{s}.tile.osm.org/{z}/{x}/{y}.png",
-            items: []
+            items: [],
+            hasLocation: false
         }
     },
     watch: {
@@ -91,8 +160,8 @@ var driver = {
         }
     },
     created: function() {
-        this.currentLocation = {latitude: 47.0, longitude:-122.0};
-        this.center = [this.currentLocation.latitude, this.currentLocation.longitude];
+        //this.currentLocation = {latitude: 47.0, longitude:-122.0};
+        //this.center = [this.currentLocation.latitude, this.currentLocation.longitude];
         this.getLocation();
         bus.$on("moveend", this.updateLocation);
         bus.$on("zoomend", this.updateZoom);
@@ -103,10 +172,11 @@ var driver = {
     },
     methods: {
         getLocation: function() {
-            if('gelocation' in navigator) {
-                navigator.geoLocation.getCurrentPosition(function(position) {
+            if('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(function(position) {
                     this.currentLocation = position.coords;
-                    this.center - [this.currentLocation.latitude, this.currentLocation.longitude];
+                    this.center = [this.currentLocation.latitude, this.currentLocation.longitude];
+                    this.hasLocation = true;
                 }.bind(this));
             }
         },
@@ -126,23 +196,28 @@ var main = new Vue({
     el: "#mount",
     template:`
         <div class="content">
+            <md-layout>
+                <md-whiteframe class="header">
+                    <md-toolbar class="header-theme">
+                        <span class="md-title">
+                            <md-avatar class="md-large">
+                                <img src="../img/bot.png"></img>
+                            </md-avatar>
+                        <h3 class="title">VolBot Volunteer Opportunities Near You</h3>
+                        </span>
+                    </md-toolbar>
+                </md-whiteframe>
+            </md-layout>
             <md-layout md-gutter>
                 <md-layout md-flex="75">
-                    <vmap :center="center" :zoom="zoom" :url="url" :items="items"></vmap>    
+                    <vmap v-if="hasLocation" :center="center" :zoom="zoom" :url="url" :items="items"></vmap>
+                    <md-spinner v-else :md-size="150" md-indeterminate></md-spinner>
                 </md-layout>
                 <md-layout>
-                    <md-card>
-                        <md-card-content>
-                            <md-list>
-                                <md-list-item>
-                                    <md-icon>send</md-icon> <span>Sent Mail</span>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
-                    </md-card>
+                    <vlist :items="items"></vlist>
                 </md-layout>
             </md-layout>
         </div>
     `,
-    mixins: [driver]       
+    mixins: [driver]
 });

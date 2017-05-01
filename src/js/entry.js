@@ -9,10 +9,11 @@ var listItem = Vue.component('vlistitem', {
         <div class="item-wrapper">
             <md-card>
                 <md-card-header>
-                    <h4>Event Title</h4>
+                    <div><h4>{{ item.eventName }}</h4></div>
+                    <div class="md-subhead">{{ item.dateTime }}</div>
                 </md-card-header>
                 <md-card-content>
-                    Your event description, url, and any images here
+                    {{ item.description }}
                 </md-card-content>
             </md-card>
         </div>
@@ -104,17 +105,21 @@ var map = Vue.component('vmap', {
         updateMap: function(items) {
             console.log("I got these items");
             console.log(items);
-            if (Array.isArray(items) && items.lenght > 0) {
+            if (Array.isArray(items) && items.length > 0) {
                 if (this.markers) {
                     this.map.removeLayer(this.markers);
                 }
                 this.markers = L.markerClusterGroup();
+                var x = this;
                 items.forEach(function(item) {
-                    var location = [item.location.lat, item.location.long];
-                    var maker = L.marker(location);
+                    //console.log(item.location.replace("'",""));
+                    //console.log(item.location);
+                    var location = ["47.583922", "-122.301288"];
+                    var marker = L.marker(location);
                     marker.bindPopup("<p>Hello world</p>");
+                    x.markers.addLayer(marker);
                 });
-                this.markers.addLayer(this.markers);
+                this.map.addLayer(this.markers);
             }
         },
         calcDistance: function(lat, lng) {
